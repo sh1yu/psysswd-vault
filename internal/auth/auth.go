@@ -51,12 +51,13 @@ func init() {
 func Auth(username, password string) bool {
 
 	if pwd, ok := passwdMap[username]; ok {
-		rightPwd := pwd[:constant.Pbkdf2keyLen]
-		salt := pwd[constant.Pbkdf2keyLen:]
+		rightPwd := pwd[:32]
+		salt := pwd[32:]
 
 		given := append([]byte(password), salt...)
-		en := pbkdf2.Key(given, salt, constant.Pbkdf2Iter, constant.Pbkdf2keyLen, sha256.New)
+		en := pbkdf2.Key(given, salt, constant.Pbkdf2Iter, 32, sha256.New)
 		return base64.StdEncoding.EncodeToString(rightPwd) == base64.StdEncoding.EncodeToString(en)
 	}
 	return false
 }
+

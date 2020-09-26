@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/psy-core/psysswd-vault/config"
 
 	"github.com/spf13/cobra"
 )
@@ -19,8 +20,9 @@ func init() {
 }
 
 func runLogin(cmd *cobra.Command, args []string) {
-
-	username, password, err := readUsernameAndPassword(cmd)
+	vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
+	checkError(err)
+	username, password, err := readUsernameAndPassword(cmd, vaultConf)
 	checkError(err)
 	fmt.Println("your username: ", username)
 	fmt.Println("your password: ", password)

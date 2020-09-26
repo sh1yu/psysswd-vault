@@ -1,28 +1,25 @@
 package tests
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	mathrand "math/rand"
+	"github.com/psy-core/psysswd-vault/internal/util"
 	"testing"
 
 	"golang.org/x/crypto/pbkdf2"
 )
 
 const (
-	saltMinLen = 8
-	saltMaxLen = 32
-	iter       = 1000
-	keyLen     = 32
+	iter   = 1000
+	keyLen = 32
 )
 
 func TestPbkdf2(t *testing.T) {
 
 	pwd := "This is a secret"
 
-	salt, err := randSalt()
+	salt, err := util.RandSalt()
 	if err != nil {
 		return
 	}
@@ -40,16 +37,6 @@ func TestPbkdf2(t *testing.T) {
 	encrypt := base64.StdEncoding.EncodeToString(en)
 	fmt.Println(encrypt)
 
-}
-
-func randSalt() ([]byte, error) {
-	// 生成8-32之间的随机数字
-	salt := make([]byte, mathrand.Intn(saltMaxLen-saltMinLen)+saltMinLen)
-	_, err := rand.Read(salt)
-	if err != nil {
-		return nil, err
-	}
-	return salt, nil
 }
 
 func encryptPwdWithSalt(pwd, salt []byte) []byte {

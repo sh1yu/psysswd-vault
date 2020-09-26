@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/psy-core/psysswd-vault/config"
 	"os"
 
 	"github.com/howeyc/gopass"
@@ -16,14 +17,15 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.PersistentFlags().StringP("conf", "c", "", "config file")
 	rootCmd.PersistentFlags().StringP("username", "u", "", "give your username")
 	rootCmd.PersistentFlags().StringP("password", "p", "", "give your master password")
-	err := rootCmd.MarkPersistentFlagRequired("username")
-	checkError(err)
 }
 
 func Execute() {
+
 	checkError(rootCmd.Execute())
+
 }
 
 func checkError(e error) {
@@ -33,11 +35,15 @@ func checkError(e error) {
 	}
 }
 
-func readUsernameAndPassword(cmd *cobra.Command) (string, string, error) {
+func readUsernameAndPassword(cmd *cobra.Command, conf *config.VaultConfig) (string, string, error) {
 	//read username
 	username, err := cmd.Flags().GetString("username")
 	if err != nil {
 		return "", "", nil
+	}
+
+	if username == "" {
+		username = conf.UserConf.DefaultUserName
 	}
 
 	//read the master password
