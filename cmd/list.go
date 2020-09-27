@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"github.com/psy-core/psysswd-vault/internal/util"
 	"golang.org/x/crypto/pbkdf2"
-	"io/ioutil"
-	"os"
-	"strings"
 
 	"github.com/psy-core/psysswd-vault/internal/auth"
 	"github.com/spf13/cobra"
@@ -41,7 +43,9 @@ func runList(cmd *cobra.Command, args []string) {
 	}
 
 	indexData, err := ioutil.ReadFile("index.data")
+	checkError(err)
 	bodyData, err := ioutil.ReadFile("body.data")
+	checkError(err)
 
 	for i := 0; i < len(indexData); i += 32 {
 		var keyOffset int64
@@ -54,14 +58,18 @@ func runList(cmd *cobra.Command, args []string) {
 			var dataLen int32
 			binary.Read(bytes.NewBuffer(indexData[i+8:i+16]), binary.LittleEndian, &dataOffset)
 			binary.Read(bytes.NewBuffer(indexData[i+16:i+20]), binary.LittleEndian, &dataLen)
-			passwordEn := bodyData[dataOffset : dataOffset+int64(dataLen)]
+			enDataAll := bodyData[dataOffset : dataOffset+int64(dataLen)]
 			var saltLen int32
-			binary.Read(bytes.NewBuffer(passwordEn[:4]), binary.LittleEndian, &saltLen)
-			salt := passwordEn[4:4+saltLen]
-			passEnKey := pbkdf2.Key([]byte(password), salt, constant.Pbkdf2Iter, 32, sha256.New)
-			plainBytes, err := util.AesDecrypt(passwordEn[4+saltLen:], passEnKey)
+			binary.Read(bytes.NewBuffer(enDataAll[:4]), binary.LittleEndian, &saltLen)
+			salt := enDataAll[4 : 4+saltLen]
+			enKey := pbkdf2.Key([]byte(password), salt, constant.Pbkdf2Iter, 32, sha256.New)
+			plainBytes, err := util.AesDecrypt(enDataAll[4+saltLen:], enKey)
 			checkError(err)
-			fmt.Printf("username: %s, password: %s\n", strings.TrimPrefix(key, username), plainBytes)
+
+			var data map[string]string
+			err = json.Unmarshal(plainBytes, &data)
+			checkError(err)
+			fmt.Printf("account: %s, username: %s, password: %s\n", strings.TrimPrefix(key, username), data["user"], data["password"])
 		}
 	}
 }
