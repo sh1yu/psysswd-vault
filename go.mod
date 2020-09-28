@@ -8,6 +8,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/spf13/cobra v1.0.0
+	github.com/stretchr/testify v1.2.2
 	golang.org/x/crypto v0.0.0-20191205180655-e7c4368fe9dd
 	gopkg.in/yaml.v2 v2.2.2
 )

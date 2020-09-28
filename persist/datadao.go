@@ -4,16 +4,15 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"github.com/jinzhu/gorm"
-	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"github.com/psy-core/psysswd-vault/internal/util"
 	"golang.org/x/crypto/pbkdf2"
 	"time"
 )
 
-func QueryRecord(conf *config.VaultConfig, masterUserName, masterPassword string, recordNameKeyword string) ([]*DecodedRecord, error) {
+func QueryRecord(dataFile string, masterUserName, masterPassword string, recordNameKeyword string) ([]*DecodedRecord, error) {
 
-	db, err := initialDB(conf.PersistConf.DataFile)
+	db, err := initialDB(dataFile)
 	if err != nil {
 		return nil, err
 	}
@@ -61,9 +60,9 @@ func QueryRecord(conf *config.VaultConfig, masterUserName, masterPassword string
 	return resultRecord, err
 }
 
-func ModifyRecord(conf *config.VaultConfig, masterUserName, masterPassword string, newData *DecodedRecord) error {
+func ModifyRecord(dbFile, masterUserName, masterPassword string, newData *DecodedRecord) error {
 
-	db, err := initialDB(conf.PersistConf.DataFile)
+	db, err := initialDB(dbFile)
 	if err != nil {
 		return err
 	}

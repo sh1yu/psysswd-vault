@@ -14,30 +14,31 @@ var addCmd = &cobra.Command{
 	Short: "add a new account for given username",
 	Long:  `add a new account info for given username`,
 	Args:  cobra.RangeArgs(2, 3),
-	Run:   runAdd,
+	Run:   func (cmd *cobra.Command, args []string) {
+		vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
+		checkError(err)
+		username, password, err := readUsernameAndPassword(cmd, vaultConf)
+		checkError(err)
+
+		exist, valid, err := persist.CheckUser(vaultConf.PersistConf.DataFile, username, password)
+		checkError(err)
+		if !exist {
+			fmt.Println("user not registered: ", username)
+			os.Exit(1)
+		}
+		if !valid {
+			fmt.Println("Permission Denied.")
+			os.Exit(1)
+		}
+		runAdd(vaultConf.PersistConf.DataFile, username, password, args)
+	},
 }
 
 func init() {
 	rootCmd.AddCommand(addCmd)
 }
 
-func runAdd(cmd *cobra.Command, args []string) {
-	vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
-	checkError(err)
-	username, password, err := readUsernameAndPassword(cmd, vaultConf)
-	checkError(err)
-
-	exist, valid, err := persist.CheckUser(vaultConf, username, password)
-	checkError(err)
-	if !exist {
-		fmt.Println("user not registered: ", username)
-		os.Exit(1)
-	}
-	if !valid {
-		fmt.Println("Permission Denied.")
-		os.Exit(1)
-	}
-
+func runAdd(dataFile, username, password string, args []string) {
 	account := args[0]
 	user := args[1]
 	extra := ""
@@ -57,7 +58,7 @@ func runAdd(cmd *cobra.Command, args []string) {
 		LoginPassword: passwd,
 		ExtraMessage:  extra,
 	}
-	err = persist.ModifyRecord(vaultConf, username, password, saveData)
+	err = persist.ModifyRecord(dataFile, username, password, saveData)
 	checkError(err)
 
 	fmt.Printf("add account %s success.\n", account)

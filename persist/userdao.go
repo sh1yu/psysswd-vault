@@ -5,15 +5,14 @@ import (
 	"encoding/base64"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"github.com/psy-core/psysswd-vault/internal/util"
 	"golang.org/x/crypto/pbkdf2"
 	"time"
 )
 
-func ModifyUser(conf *config.VaultConfig, username, password string) error {
-	db, err := initialDB(conf.PersistConf.DataFile)
+func ModifyUser(dataFile, username, password string) error {
+	db, err := initialDB(dataFile)
 	if err != nil {
 		return err
 	}
@@ -53,8 +52,8 @@ func ModifyUser(conf *config.VaultConfig, username, password string) error {
 	return db.Save(&user).Error
 }
 
-func CheckUser(conf *config.VaultConfig, username, password string) (bool, bool, error) {
-	db, err := initialDB(conf.PersistConf.DataFile)
+func CheckUser(dataFile, username, password string) (bool, bool, error) {
+	db, err := initialDB(dataFile)
 	if err != nil {
 		return false, false, err
 	}

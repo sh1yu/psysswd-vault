@@ -14,7 +14,7 @@ var rootCmd = &cobra.Command{
 	Use:   os.Args[0],
 	Short: "A password vault for your password security.",
 	Long:  `A password vault for your password security.`,
-	Run:   runLogin,
+	Run:   RunLogin,
 }
 
 func init() {

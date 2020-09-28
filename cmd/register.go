@@ -1,0 +1,37 @@
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/howeyc/gopass"
+	"github.com/psy-core/psysswd-vault/config"
+	"github.com/psy-core/psysswd-vault/persist"
+	"github.com/spf13/cobra"
+)
+
+var registerCmd = &cobra.Command{
+	Use:   "register <master-account-name>",
+	Short: "register a new master account for storage password",
+	Long:  `register a new master account for storage password`,
+	Args:  cobra.ExactArgs(1),
+	Run:   func(cmd *cobra.Command, args []string){
+		vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
+		checkError(err)
+		runRegister(vaultConf.PersistConf.DataFile, args[0])
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(registerCmd)
+}
+
+func runRegister(dataFile, accountUser string) {
+	fmt.Printf("Please input your new password for account '%s' :",accountUser)
+	passwordBytes, err := gopass.GetPasswdMasked()
+	checkError(err)
+
+	err = persist.ModifyUser(dataFile, accountUser, string(passwordBytes))
+	checkError(err)
+
+	fmt.Println("register success.")
+}
