@@ -33,8 +33,8 @@ func ModifyUser(conf *config.VaultConfig, username, password string) error {
 		user = User{
 			Name:        username,
 			Description: "",
-			Salt:        salt,
-			PassToken:   passToken,
+			Salt:        base64.StdEncoding.EncodeToString(salt),
+			PassToken:   base64.StdEncoding.EncodeToString(passToken),
 			CreateTime:  time.Now(),
 			UpdateTime:  time.Now(),
 		}
@@ -43,7 +43,12 @@ func ModifyUser(conf *config.VaultConfig, username, password string) error {
 	}
 
 	//用户已存在
-	user.PassToken = pbkdf2.Key([]byte(password), user.Salt, constant.Pbkdf2Iter, 32, sha256.New)
+	saltBytes, err := base64.StdEncoding.DecodeString(user.Salt)
+	if err != nil {
+		return err
+	}
+	passToken := pbkdf2.Key([]byte(password), saltBytes, constant.Pbkdf2Iter, 32, sha256.New)
+	user.PassToken = base64.StdEncoding.EncodeToString(passToken)
 
 	return db.Save(&user).Error
 }
@@ -64,8 +69,12 @@ func CheckUser(conf *config.VaultConfig, username, password string) (bool, bool,
 		return false, false, nil
 	}
 
-	given := pbkdf2.Key([]byte(password), user.Salt, constant.Pbkdf2Iter, 32, sha256.New)
+	saltBytes, err := base64.StdEncoding.DecodeString(user.Salt)
+	if err != nil {
+		return true, false, err
+	}
+	given := pbkdf2.Key([]byte(password), saltBytes, constant.Pbkdf2Iter, 32, sha256.New)
 
-	isMatch := base64.StdEncoding.EncodeToString(given) == base64.StdEncoding.EncodeToString(user.PassToken)
+	isMatch := base64.StdEncoding.EncodeToString(given) == user.PassToken
 	return true, isMatch, nil
 }

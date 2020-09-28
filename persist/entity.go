@@ -6,8 +6,8 @@ type User struct {
 	ID          int64     `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
 	Name        string    `gorm:"size:255;index;not null;unique"`
 	Description string    `gorm:"size:255"`
-	Salt        []byte    `gorm:"size:255;not null;"`
-	PassToken   []byte    `gorm:"size:255"`
+	Salt        string    `gorm:"size:255;not null;"`
+	PassToken   string    `gorm:"size:255"`
 	CreateTime  time.Time `gorm:"type:datetime"`
 	UpdateTime  time.Time `gorm:"type:datetime"`
 }
@@ -30,8 +30,8 @@ type AccountRecord struct {
 	Name            string    `gorm:"size:255;index;not null;unique"`
 	Description     string    `gorm:"size:255"`
 	LoginName       string    `gorm:"size:255;index"`
-	Salt            []byte    `gorm:"size:255;not null;"`
-	LoginPasswordEn []byte    `gorm:"size:255;index"`
+	Salt            string    `gorm:"size:255;not null;"`
+	LoginPasswordEn string    `gorm:"size:255;index"`
 	ExtraMessage    string    `gorm:"size:255;index"`
 	CreateTime      time.Time `gorm:"type:datetime"`
 	UpdateTime      time.Time `gorm:"type:datetime"`

@@ -2,6 +2,7 @@ package persist
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"github.com/jinzhu/gorm"
 	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
@@ -33,8 +34,16 @@ func QueryRecord(conf *config.VaultConfig, masterUserName, masterPassword string
 	resultRecord := make([]*DecodedRecord, 0, len(datas))
 	for _, data := range datas {
 
-		enKey := pbkdf2.Key([]byte(masterPassword), data.Salt, constant.Pbkdf2Iter, 32, sha256.New)
-		plainBytes, err := util.AesDecrypt(data.LoginPasswordEn, enKey)
+		saltBytes, err := base64.StdEncoding.DecodeString(data.Salt)
+		if err != nil {
+			return nil, err
+		}
+		loginPasswordEnBytes, err := base64.StdEncoding.DecodeString(data.LoginPasswordEn)
+		if err != nil {
+			return nil, err
+		}
+		enKey := pbkdf2.Key([]byte(masterPassword), saltBytes, constant.Pbkdf2Iter, 32, sha256.New)
+		plainBytes, err := util.AesDecrypt(loginPasswordEnBytes, enKey)
 		if err != nil {
 			return nil, err
 		}
@@ -85,8 +94,8 @@ func ModifyRecord(conf *config.VaultConfig, masterUserName, masterPassword strin
 			Name:            newData.Name,
 			Description:     newData.Description,
 			LoginName:       newData.LoginName,
-			Salt:            salt,
-			LoginPasswordEn: encrypted,
+			Salt:            base64.StdEncoding.EncodeToString(salt),
+			LoginPasswordEn: base64.StdEncoding.EncodeToString(encrypted),
 			ExtraMessage:    newData.ExtraMessage,
 			CreateTime:      time.Now(),
 			UpdateTime:      time.Now(),
@@ -94,14 +103,19 @@ func ModifyRecord(conf *config.VaultConfig, masterUserName, masterPassword strin
 		return db.Save(&saveData).Error
 	}
 
-	keyEn := pbkdf2.Key([]byte(masterPassword), oldData.Salt, constant.Pbkdf2Iter, 32, sha256.New)
+	saltBytes, err := base64.StdEncoding.DecodeString(oldData.Salt)
+	if err != nil {
+		return err
+	}
+	keyEn := pbkdf2.Key([]byte(masterPassword), saltBytes, constant.Pbkdf2Iter, 32, sha256.New)
 	encrypted, err := util.AesEncrypt([]byte(newData.LoginPassword), keyEn)
 	if err != nil {
 		return err
 	}
+
 	oldData.Description = newData.Description
 	oldData.LoginName = newData.LoginName
-	oldData.LoginPasswordEn = encrypted
+	oldData.LoginPasswordEn = base64.StdEncoding.EncodeToString(encrypted)
 	oldData.ExtraMessage = newData.ExtraMessage
 	oldData.UpdateTime = time.Now()
 	return db.Save(&oldData).Error
