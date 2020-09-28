@@ -4,6 +4,7 @@ import (
     "bufio"
     "errors"
     "fmt"
+    "io"
     "os"
     "strings"
 
@@ -53,6 +54,9 @@ func runLogin(dataFile, username, password string) {
 
         //fixme 应该有办法监控处理上下左右箭头的按键事件
         line, err := stdinReader.ReadString('\n')
+        if err ==io.EOF{
+            break
+        }
         checkError(err)
 
         token := strings.Fields(line)
@@ -63,11 +67,19 @@ func runLogin(dataFile, username, password string) {
 
         switch token[0] {
         case "add":
-            if len(token) != 3 && len(token) != 4 {
-                fmt.Println("usage: add <account-name> <account-user> [extra-message]")
+            _, args, flags, err := parseArgs(token, map[string]int{"-g": 0, "--genpass": 0})
+            if err != nil {
+                fmt.Println("error:", err, "usage: add <account-name> <account-user> [extra-message] [-g]")
                 continue
             }
-            runAdd(dataFile, username, password, token[1:])
+            if len(args) != 2 && len(args) != 3 {
+                fmt.Println("usage: add <account-name> <account-user> [extra-message] [-g]")
+                continue
+            }
+
+            _, ok1 := flags["-g"]
+            _, ok2 := flags["--genpass"]
+            runAdd(dataFile, username, password, ok1 || ok2, args)
         case "find":
             _, args, flags, err := parseArgs(token, map[string]int{"-P": 0, "--plain": 0})
             if err != nil {
