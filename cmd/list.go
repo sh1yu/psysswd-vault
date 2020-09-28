@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/olekukonko/tablewriter"
 	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"github.com/psy-core/psysswd-vault/internal/util"
@@ -24,6 +25,7 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
+	listCmd.Flags().BoolP("plain", "P", false, "if true, print password in plain text")
 	rootCmd.AddCommand(listCmd)
 }
 
@@ -43,6 +45,9 @@ func runList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	printHeader := []string{"账号", "用户名", "密码", "额外信息"}
+	printData := make([][]string, 0)
+
 	err = util.RangePersistData(vaultConf, func(key, data []byte) {
 
 		strKey := string(key)
@@ -61,10 +66,38 @@ func runList(cmd *cobra.Command, args []string) {
 		var jsonData map[string]string
 		err = json.Unmarshal(plainBytes, &jsonData)
 		checkError(err)
-		fmt.Printf("account: %s, username: %s, password: %s\n",
-			strings.TrimPrefix(strKey, username), jsonData["user"], jsonData["password"])
+
+		isPlain, err := cmd.Flags().GetBool("plain")
+		checkError(err)
+
+		if isPlain {
+			printData = append(printData, []string{
+				strings.TrimPrefix(strKey, username),
+				jsonData["user"],
+				jsonData["password"],
+				jsonData["extra"],
+			})
+		} else {
+			printData = append(printData, []string{
+				strings.TrimPrefix(strKey, username),
+				jsonData["user"],
+				string(bytes.Repeat([]byte("*"), len(jsonData["password"]))),
+				jsonData["extra"],
+			})
+		}
 
 	})
-
 	checkError(err)
+
+	tablePrint(printData, printHeader)
+}
+
+func tablePrint(data [][]string, header []string) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(header)
+
+	for _, v := range data {
+		table.Append(v)
+	}
+	table.Render()
 }
