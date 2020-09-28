@@ -3,11 +3,9 @@ package cmd
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/howeyc/gopass"
@@ -16,7 +14,6 @@ import (
 	"github.com/psy-core/psysswd-vault/internal/util"
 	"golang.org/x/crypto/pbkdf2"
 
-	"github.com/psy-core/psysswd-vault/internal/auth"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +35,12 @@ func runAdd(cmd *cobra.Command, args []string) {
 	username, password, err := readUsernameAndPassword(cmd, vaultConf)
 	checkError(err)
 
-	if !auth.Auth(username, password) {
+	exist, valid := util.Auth(vaultConf, username, password)
+	if !exist {
+		fmt.Println("user not registered: ", username)
+		os.Exit(1)
+	}
+	if !valid {
 		fmt.Println("Permission Denied.")
 		os.Exit(1)
 	}
@@ -61,63 +63,21 @@ func runAdd(cmd *cobra.Command, args []string) {
 	dataBytes, err := json.Marshal(data)
 	checkError(err)
 
-	//使用master password加盐生成aes-256的key
 	salt, err := util.RandSalt()
 	checkError(err)
 	keyEn := pbkdf2.Key([]byte(password), salt, constant.Pbkdf2Iter, 32, sha256.New)
 	encrypted, err := util.AesEncrypt(dataBytes, keyEn)
 	checkError(err)
 
-	//buf 存入需要保存的加密数据
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.LittleEndian, int32(len(salt)))
-	buf.Write(salt)
-	buf.Write(encrypted)
-
-	bodyData, err := ioutil.ReadFile("body.data")
-	checkError(err)
-	bodyOffset := len(bodyData)
-	bodyLen := buf.Len()
-	bodyData = append(bodyData, buf.Bytes()...)
+	//finalData 存入需要保存的加密数据
+	var finalData bytes.Buffer
+	binary.Write(&finalData, binary.LittleEndian, int32(len(salt)))
+	finalData.Write(salt)
+	finalData.Write(encrypted)
 
 	//存储的key由master user和account共同组成
-	storeKey := pbkdf2.Key([]byte(username+data["account"]), []byte{}, constant.Pbkdf2Iter, 8, sha256.New)
-	indexData, err := ioutil.ReadFile("index.data")
+	err = util.ModifyData(vaultConf, []byte(username+data["account"]), finalData.Bytes())
 	checkError(err)
 
-	for i := 0; i < len(indexData); i += 32 {
-		if base64.StdEncoding.EncodeToString(storeKey) == base64.StdEncoding.EncodeToString(indexData[i:i+8]) {
-			//已经存在，改密码
-
-			var updateIndexBuf bytes.Buffer
-			binary.Write(&updateIndexBuf, binary.LittleEndian, int64(bodyOffset))
-			binary.Write(&updateIndexBuf, binary.LittleEndian, int32(bodyLen))
-			updateByte := updateIndexBuf.Bytes()
-
-			for j := 0; j < 12; j++ {
-				indexData[i+8+j] = updateByte[j]
-			}
-
-			ioutil.WriteFile("body.data", bodyData, 0644)
-			ioutil.WriteFile("index.data", indexData, 0644)
-			return
-		}
-	}
-
-	//不存在，添加user和密码
-	userByte := []byte(username + data["account"])
-	keyOffset := len(bodyData)
-	keyLen := len(userByte)
-	bodyData = append(bodyData, userByte...)
-
-	var addIndexBuf bytes.Buffer
-	addIndexBuf.Write(storeKey)
-	binary.Write(&addIndexBuf, binary.LittleEndian, int64(bodyOffset))
-	binary.Write(&addIndexBuf, binary.LittleEndian, int32(bodyLen))
-	binary.Write(&addIndexBuf, binary.LittleEndian, int64(keyOffset))
-	binary.Write(&addIndexBuf, binary.LittleEndian, int32(keyLen))
-	indexData = append(indexData, addIndexBuf.Bytes()...)
-
-	ioutil.WriteFile("body.data", bodyData, 0644)
-	ioutil.WriteFile("index.data", indexData, 0644)
+	fmt.Printf("add account %s success.\n", data["account"])
 }

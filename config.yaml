@@ -1,3 +1,7 @@
 user:
   defaultUserName: psy
 
+persist:
+  meta_path: ./meta.data
+  index_path: ./index.data
+  data_path: ./file.data

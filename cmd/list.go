@@ -6,17 +6,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-
 	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"github.com/psy-core/psysswd-vault/internal/util"
-	"golang.org/x/crypto/pbkdf2"
-
-	"github.com/psy-core/psysswd-vault/internal/auth"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/pbkdf2"
+	"os"
+	"strings"
 )
 
 var listCmd = &cobra.Command{
@@ -37,39 +33,38 @@ func runList(cmd *cobra.Command, args []string) {
 	username, password, err := readUsernameAndPassword(cmd, vaultConf)
 	checkError(err)
 
-	if !auth.Auth(username, password) {
+	exist, valid := util.Auth(vaultConf, username, password)
+	if !exist {
+		fmt.Println("user not registered: ", username)
+		os.Exit(1)
+	}
+	if !valid {
 		fmt.Println("Permission Denied.")
 		os.Exit(1)
 	}
 
-	indexData, err := ioutil.ReadFile("index.data")
-	checkError(err)
-	bodyData, err := ioutil.ReadFile("body.data")
-	checkError(err)
+	err = util.RangePersistData(vaultConf, func(key, data []byte) {
 
-	for i := 0; i < len(indexData); i += 32 {
-		var keyOffset int64
-		var keyLen int32
-		binary.Read(bytes.NewBuffer(indexData[i+20:i+28]), binary.LittleEndian, &keyOffset)
-		binary.Read(bytes.NewBuffer(indexData[i+28:i+32]), binary.LittleEndian, &keyLen)
-		key := string(bodyData[keyOffset : keyOffset+int64(keyLen)])
-		if strings.HasPrefix(key, username) {
-			var dataOffset int64
-			var dataLen int32
-			binary.Read(bytes.NewBuffer(indexData[i+8:i+16]), binary.LittleEndian, &dataOffset)
-			binary.Read(bytes.NewBuffer(indexData[i+16:i+20]), binary.LittleEndian, &dataLen)
-			enDataAll := bodyData[dataOffset : dataOffset+int64(dataLen)]
-			var saltLen int32
-			binary.Read(bytes.NewBuffer(enDataAll[:4]), binary.LittleEndian, &saltLen)
-			salt := enDataAll[4 : 4+saltLen]
-			enKey := pbkdf2.Key([]byte(password), salt, constant.Pbkdf2Iter, 32, sha256.New)
-			plainBytes, err := util.AesDecrypt(enDataAll[4+saltLen:], enKey)
-			checkError(err)
-
-			var data map[string]string
-			err = json.Unmarshal(plainBytes, &data)
-			checkError(err)
-			fmt.Printf("account: %s, username: %s, password: %s\n", strings.TrimPrefix(key, username), data["user"], data["password"])
+		strKey := string(key)
+		if !strings.HasPrefix(strKey, username) {
+			return
 		}
-	}
+
+		var saltLen int32
+		binary.Read(bytes.NewBuffer(data[:4]), binary.LittleEndian, &saltLen)
+		salt := data[4 : 4+saltLen]
+
+		enKey := pbkdf2.Key([]byte(password), salt, constant.Pbkdf2Iter, 32, sha256.New)
+		plainBytes, err := util.AesDecrypt(data[4+saltLen:], enKey)
+		checkError(err)
+
+		var jsonData map[string]string
+		err = json.Unmarshal(plainBytes, &jsonData)
+		checkError(err)
+		fmt.Printf("account: %s, username: %s, password: %s\n",
+			strings.TrimPrefix(strKey, username), jsonData["user"], jsonData["password"])
+
+	})
+
+	checkError(err)
 }
