@@ -5,22 +5,20 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
-	"fmt"
 	"github.com/psy-core/psysswd-vault/config"
-	"io/ioutil"
-	"os"
-
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"golang.org/x/crypto/pbkdf2"
+	"io/ioutil"
 )
 
+//fixme deprecated
 func ModifyAccount(conf *config.VaultConfig, username, password string) error {
-	metaFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.MetaFile)
-	if err != nil {
-		return err
-	}
+	//metaFilePath, err := config.CreateFileIfNeeded("./meta.data")
+	//if err != nil {
+	//	return err
+	//}
 
-	content, _ := ioutil.ReadFile(metaFilePath)
+	content, _ := ioutil.ReadFile("./meta.data")
 
 	var buf bytes.Buffer
 	var userLen, passLen int32
@@ -32,7 +30,7 @@ func ModifyAccount(conf *config.VaultConfig, username, password string) error {
 
 		initOffset := offset
 
-		err = binary.Read(bytes.NewBuffer(content[offset:4+offset]), binary.LittleEndian, &userLen)
+		err := binary.Read(bytes.NewBuffer(content[offset:4+offset]), binary.LittleEndian, &userLen)
 		if err != nil {
 			return err
 		}
@@ -85,23 +83,24 @@ func ModifyAccount(conf *config.VaultConfig, username, password string) error {
 		buf.Write(newPass)
 	}
 
-	return ioutil.WriteFile(metaFilePath, buf.Bytes(), 0644)
+	return ioutil.WriteFile("./meta.data", buf.Bytes(), 0644)
 }
 
+//fixme deprecated
 func Auth(conf *config.VaultConfig, username, password string) (bool, bool) {
 
-	metaFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.MetaFile)
-	if err != nil {
-		fmt.Println("some unexpected error happen for meta file:", err)
-		os.Exit(1)
-	}
-	content, _ := ioutil.ReadFile(metaFilePath)
+	//metaFilePath, err := config.CreateFileIfNeeded("meta.data")
+	//if err != nil {
+	//	fmt.Println("some unexpected error happen for meta file:", err)
+	//	os.Exit(1)
+	//}
+	content, _ := ioutil.ReadFile("./meta.data")
 
 	var userLen, passLen int32
 	var offset int32 = 0
 
 	for offset < int32(len(content)) {
-		err = binary.Read(bytes.NewBuffer(content[offset:4+offset]), binary.LittleEndian, &userLen)
+		err := binary.Read(bytes.NewBuffer(content[offset:4+offset]), binary.LittleEndian, &userLen)
 		if err != nil {
 			panic(err)
 		}

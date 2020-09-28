@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/howeyc/gopass"
 	"github.com/psy-core/psysswd-vault/config"
-	"github.com/psy-core/psysswd-vault/internal/util"
+	"github.com/psy-core/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ func runSign(cmd *cobra.Command, args []string) {
 	passwordBytes, err := gopass.GetPasswdMasked()
 	checkError(err)
 
-	err = util.ModifyAccount(vaultConf, args[0], string(passwordBytes))
+	err = persist.ModifyUser(vaultConf, args[0], string(passwordBytes))
 	checkError(err)
 
 	fmt.Println("sign success.")

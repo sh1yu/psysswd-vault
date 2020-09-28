@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/psy-core/psysswd-vault/config"
 	"os"
 

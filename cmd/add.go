@@ -1,20 +1,12 @@
 package cmd
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
-	"encoding/json"
 	"fmt"
-	"os"
-
 	"github.com/howeyc/gopass"
 	"github.com/psy-core/psysswd-vault/config"
-	"github.com/psy-core/psysswd-vault/internal/constant"
-	"github.com/psy-core/psysswd-vault/internal/util"
-	"golang.org/x/crypto/pbkdf2"
-
+	"github.com/psy-core/psysswd-vault/persist"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var addCmd = &cobra.Command{
@@ -35,7 +27,8 @@ func runAdd(cmd *cobra.Command, args []string) {
 	username, password, err := readUsernameAndPassword(cmd, vaultConf)
 	checkError(err)
 
-	exist, valid := util.Auth(vaultConf, username, password)
+	exist, valid, err := persist.CheckUser(vaultConf, username, password)
+	checkError(err)
 	if !exist {
 		fmt.Println("user not registered: ", username)
 		os.Exit(1)
@@ -45,39 +38,27 @@ func runAdd(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	data := map[string]string{
-		"account": args[0],
-		"user":    args[1],
-		"extra":   "",
-	}
-
+	account := args[0]
+	user := args[1]
+	extra := ""
 	if len(args) == 3 {
-		data["extra"] = args[2]
+		extra = args[2]
 	}
 
-	fmt.Printf("input password for account %s: ", data["account"])
+	fmt.Printf("input password for account %s: ", account)
 	passwordBytes, err := gopass.GetPasswdMasked()
 	checkError(err)
-	data["password"] = string(passwordBytes)
+	passwd := string(passwordBytes)
 
-	dataBytes, err := json.Marshal(data)
+	saveData := &persist.DecodedRecord{
+		Name:          account,
+		Description:   "",
+		LoginName:     user,
+		LoginPassword: passwd,
+		ExtraMessage:  extra,
+	}
+	err = persist.ModifyRecord(vaultConf, username, password, saveData)
 	checkError(err)
 
-	salt, err := util.RandSalt()
-	checkError(err)
-	keyEn := pbkdf2.Key([]byte(password), salt, constant.Pbkdf2Iter, 32, sha256.New)
-	encrypted, err := util.AesEncrypt(dataBytes, keyEn)
-	checkError(err)
-
-	//finalData 存入需要保存的加密数据
-	var finalData bytes.Buffer
-	binary.Write(&finalData, binary.LittleEndian, int32(len(salt)))
-	finalData.Write(salt)
-	finalData.Write(encrypted)
-
-	//存储的key由master user和account共同组成
-	err = util.ModifyData(vaultConf, []byte(username+data["account"]), finalData.Bytes())
-	checkError(err)
-
-	fmt.Printf("add account %s success.\n", data["account"])
+	fmt.Printf("add account %s success.\n", account)
 }

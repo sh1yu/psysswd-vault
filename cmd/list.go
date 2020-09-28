@@ -2,18 +2,13 @@ package cmd
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
-	"github.com/psy-core/psysswd-vault/internal/util"
+	"github.com/psy-core/psysswd-vault/persist"
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/pbkdf2"
 	"os"
-	"strings"
 )
 
 var listCmd = &cobra.Command{
@@ -35,7 +30,8 @@ func runList(cmd *cobra.Command, args []string) {
 	username, password, err := readUsernameAndPassword(cmd, vaultConf)
 	checkError(err)
 
-	exist, valid := util.Auth(vaultConf, username, password)
+	exist, valid, err := persist.CheckUser(vaultConf, username, password)
+	checkError(err)
 	if !exist {
 		fmt.Println("user not registered: ", username)
 		os.Exit(1)
@@ -45,49 +41,34 @@ func runList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printHeader := []string{"账号", "用户名", "密码", "额外信息"}
+	isPlain, err := cmd.Flags().GetBool("plain")
+	checkError(err)
+
+	printHeader := []string{"账号", "用户名", "密码", "额外信息", "更新时间"}
 	printData := make([][]string, 0)
 
-	err = util.RangePersistData(vaultConf, func(key, data []byte) {
+	decodeRecords, err := persist.QueryRecord(vaultConf, username, password, "")
+	checkError(err)
 
-		strKey := string(key)
-		if !strings.HasPrefix(strKey, username) {
-			return
-		}
-
-		var saltLen int32
-		binary.Read(bytes.NewBuffer(data[:4]), binary.LittleEndian, &saltLen)
-		salt := data[4 : 4+saltLen]
-
-		enKey := pbkdf2.Key([]byte(password), salt, constant.Pbkdf2Iter, 32, sha256.New)
-		plainBytes, err := util.AesDecrypt(data[4+saltLen:], enKey)
-		checkError(err)
-
-		var jsonData map[string]string
-		err = json.Unmarshal(plainBytes, &jsonData)
-		checkError(err)
-
-		isPlain, err := cmd.Flags().GetBool("plain")
-		checkError(err)
-
+	for _, record := range decodeRecords {
 		if isPlain {
 			printData = append(printData, []string{
-				strings.TrimPrefix(strKey, username),
-				jsonData["user"],
-				jsonData["password"],
-				jsonData["extra"],
+				record.Name,
+				record.LoginName,
+				record.LoginPassword,
+				record.ExtraMessage,
+				record.UpdateTime.Format(constant.DateFormatSeconds),
 			})
 		} else {
 			printData = append(printData, []string{
-				strings.TrimPrefix(strKey, username),
-				jsonData["user"],
-				string(bytes.Repeat([]byte("*"), len(jsonData["password"]))),
-				jsonData["extra"],
+				record.Name,
+				record.LoginName,
+				string(bytes.Repeat([]byte("*"), len(record.LoginPassword))),
+				record.ExtraMessage,
+				record.UpdateTime.Format(constant.DateFormatSeconds),
 			})
 		}
-
-	})
-	checkError(err)
+	}
 
 	tablePrint(printData, printHeader)
 }

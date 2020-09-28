@@ -11,22 +11,23 @@ import (
 	"io/ioutil"
 )
 
+//fixme deprecated
 func RangePersistData(conf *config.VaultConfig, f func(key, data []byte)) error {
 
-	indexFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.IndexFile)
-	if err != nil {
-		return err
-	}
-	dataFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.DataFile)
-	if err != nil {
-		return err
-	}
+	//indexFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.IndexFile)
+	//if err != nil {
+	//	return err
+	//}
+	//dataFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.DataFile)
+	//if err != nil {
+	//	return err
+	//}
 
-	indexData, err := ioutil.ReadFile(indexFilePath)
+	indexData, err := ioutil.ReadFile("./index.data")
 	if err != nil {
 		return err
 	}
-	bodyData, err := ioutil.ReadFile(dataFilePath)
+	bodyData, err := ioutil.ReadFile("./file.data")
 	if err != nil {
 		return err
 	}
@@ -49,23 +50,24 @@ func RangePersistData(conf *config.VaultConfig, f func(key, data []byte)) error 
 	return nil
 }
 
+//fixme deprecated
 func ModifyData(conf *config.VaultConfig, originKey, data []byte) error {
 	//使用master password加盐生成aes-256的key
 
-	indexFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.IndexFile)
-	if err != nil {
-		return err
-	}
-	dataFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.DataFile)
-	if err != nil {
-		return err
-	}
+	//indexFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.IndexFile)
+	//if err != nil {
+	//	return err
+	//}
+	//dataFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.DataFile)
+	//if err != nil {
+	//	return err
+	//}
 
-	indexData, err := ioutil.ReadFile(indexFilePath)
+	indexData, err := ioutil.ReadFile("./index.data")
 	if err != nil {
 		return err
 	}
-	bodyData, err := ioutil.ReadFile(dataFilePath)
+	bodyData, err := ioutil.ReadFile("./file.data")
 	if err != nil {
 		return err
 	}
@@ -90,8 +92,8 @@ func ModifyData(conf *config.VaultConfig, originKey, data []byte) error {
 				indexData[i+8+j] = updateByte[j]
 			}
 
-			ioutil.WriteFile(dataFilePath, bodyData, 0644)
-			ioutil.WriteFile(indexFilePath, indexData, 0644)
+			ioutil.WriteFile("./file.data", bodyData, 0644)
+			ioutil.WriteFile("./index.data", indexData, 0644)
 			return nil
 		}
 	}
@@ -109,8 +111,8 @@ func ModifyData(conf *config.VaultConfig, originKey, data []byte) error {
 	binary.Write(&addIndexBuf, binary.LittleEndian, int32(keyLen))
 	indexData = append(indexData, addIndexBuf.Bytes()...)
 
-	ioutil.WriteFile(dataFilePath, bodyData, 0644)
-	ioutil.WriteFile(indexFilePath, indexData, 0644)
+	ioutil.WriteFile("./file.data", bodyData, 0644)
+	ioutil.WriteFile("./index.data", indexData, 0644)
 
 	return nil
 }

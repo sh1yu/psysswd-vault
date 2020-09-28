@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"github.com/jinzhu/gorm"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -10,10 +11,8 @@ import (
 )
 
 const (
-	defaultVaultConfigFile  = "~/.pvlt/config.yaml"
-	defaultPersistMetaFile  = "~/.pvlt/meta.data"
-	defaultPersistIndexFile = "~/.pvlt/index.data"
-	defaultPersistDataFile  = "~/.pvlt/file.data"
+	defaultVaultConfigFile = "~/.pvlt/config.yaml"
+	defaultPersistDataFile = "~/.pvlt/file.data"
 )
 
 type VaultConfig struct {
@@ -26,9 +25,7 @@ type UserConfig struct {
 }
 
 type PersistConfig struct {
-	MetaFile  string `yaml:"meta_path"`
-	IndexFile string `yaml:"index_path"`
-	DataFile  string `yaml:"data_path"`
+	DataFile string `yaml:"data_path"`
 }
 
 func InitConf(configFile string, err error) (*VaultConfig, error) {
@@ -39,7 +36,7 @@ func InitConf(configFile string, err error) (*VaultConfig, error) {
 		configFile = defaultVaultConfigFile
 	}
 
-	confPath, err := CreateFileIfNeeded(configFile)
+	confPath, err := createFileIfNeeded(configFile)
 	if err != nil {
 		return nil, err
 	}
@@ -55,19 +52,21 @@ func InitConf(configFile string, err error) (*VaultConfig, error) {
 		return nil, err
 	}
 
-	if vaultConf.PersistConf.MetaFile == "" {
-		vaultConf.PersistConf.MetaFile = defaultPersistMetaFile
-	}
-	if vaultConf.PersistConf.IndexFile == "" {
-		vaultConf.PersistConf.IndexFile = defaultPersistIndexFile
-	}
 	if vaultConf.PersistConf.DataFile == "" {
 		vaultConf.PersistConf.DataFile = defaultPersistDataFile
 	}
 	return &vaultConf, nil
 }
 
-func CreateFileIfNeeded(file string) (string, error) {
+func InitDBFile(dbFile string) (*gorm.DB, error) {
+	f, err := createFileIfNeeded(dbFile)
+	if err != nil {
+		return nil, err
+	}
+	return gorm.Open("sqlite3", f)
+}
+
+func createFileIfNeeded(file string) (string, error) {
 
 	if strings.HasPrefix(file, "~/") {
 		home, err := os.UserHomeDir()
