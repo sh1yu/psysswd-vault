@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
 	"github.com/psy-core/psysswd-vault/config"
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"github.com/psy-core/psysswd-vault/internal/util"
@@ -16,20 +15,20 @@ import (
 	"strings"
 )
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list account info for given username",
-	Long:  `list account info for given username`,
-	Args:  cobra.NoArgs,
-	Run:   runList,
+var findCmd = &cobra.Command{
+	Use:   "find <account-keyword>",
+	Short: "find given account info",
+	Long:  `find given account info`,
+	Args:  cobra.ExactArgs(1),
+	Run:   runFind,
 }
 
 func init() {
-	listCmd.Flags().BoolP("plain", "P", false, "if true, print password in plain text")
-	rootCmd.AddCommand(listCmd)
+	findCmd.Flags().BoolP("plain", "P", false, "if true, print password in plain text")
+	rootCmd.AddCommand(findCmd)
 }
 
-func runList(cmd *cobra.Command, args []string) {
+func runFind(cmd *cobra.Command, args []string) {
 	vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
 	checkError(err)
 	username, password, err := readUsernameAndPassword(cmd, vaultConf)
@@ -47,11 +46,12 @@ func runList(cmd *cobra.Command, args []string) {
 
 	printHeader := []string{"账号", "用户名", "密码", "额外信息"}
 	printData := make([][]string, 0)
-
 	err = util.RangePersistData(vaultConf, func(key, data []byte) {
 
 		strKey := string(key)
-		if !strings.HasPrefix(strKey, username) {
+		account := strings.TrimPrefix(strKey, username)
+
+		if !strings.Contains(account, args[0]) {
 			return
 		}
 
@@ -72,14 +72,14 @@ func runList(cmd *cobra.Command, args []string) {
 
 		if isPlain {
 			printData = append(printData, []string{
-				strings.TrimPrefix(strKey, username),
+				account,
 				jsonData["user"],
 				jsonData["password"],
 				jsonData["extra"],
 			})
 		} else {
 			printData = append(printData, []string{
-				strings.TrimPrefix(strKey, username),
+				account,
 				jsonData["user"],
 				string(bytes.Repeat([]byte("*"), len(jsonData["password"]))),
 				jsonData["extra"],
@@ -90,22 +90,4 @@ func runList(cmd *cobra.Command, args []string) {
 	checkError(err)
 
 	tablePrint(printData, printHeader)
-}
-
-func tablePrint(data [][]string, header []string) {
-
-	if len(data) == 0 {
-		fmt.Println("+-----------------------+")
-		fmt.Println("|      查询内容为空     |")
-		fmt.Println("+-----------------------+")
-		return
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(header)
-
-	for _, v := range data {
-		table.Append(v)
-	}
-	table.Render()
 }
