@@ -39,24 +39,29 @@ func readUsernameAndPassword(cmd *cobra.Command, conf *config.VaultConfig) (stri
 	//read username
 	username, err := cmd.Flags().GetString("username")
 	if err != nil {
-		return "", "", nil
+		return "", "", err
 	}
 
 	if username == "" {
 		username = conf.UserConf.DefaultUserName
 	}
 
+	if username == "" {
+		fmt.Println("please give your master user name with -u or in config file.")
+		os.Exit(1)
+	}
+
 	//read the master password
 	password, err := cmd.Flags().GetString("password")
 	if err != nil {
-		return "", "", nil
+		return "", "", err
 	}
 
 	if password == "" {
 		fmt.Print("please input your master password: ")
 		passwordBytes, err := gopass.GetPasswdMasked()
 		if err != nil {
-			return "", "", nil
+			return "", "", err
 		}
 		password = string(passwordBytes)
 	}

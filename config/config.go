@@ -1,15 +1,19 @@
 package config
 
 import (
+	"errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 const (
-	defaultVaultConfigFile  = "./config.yaml"
-	defaultPersistMetaFile  = "meta.data"
-	defaultPersistIndexFile = "index.data"
-	defaultPersistDataFile  = "file.data"
+	defaultVaultConfigFile  = "~/.pvlt/config.yaml"
+	defaultPersistMetaFile  = "~/.pvlt/meta.data"
+	defaultPersistIndexFile = "~/.pvlt/index.data"
+	defaultPersistDataFile  = "~/.pvlt/file.data"
 )
 
 type VaultConfig struct {
@@ -34,7 +38,13 @@ func InitConf(configFile string, err error) (*VaultConfig, error) {
 	if configFile == "" {
 		configFile = defaultVaultConfigFile
 	}
-	content, err := ioutil.ReadFile(configFile)
+
+	confPath, err := CreateFileIfNeeded(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := ioutil.ReadFile(confPath)
 	if err != nil {
 		return nil, err
 	}
@@ -55,4 +65,52 @@ func InitConf(configFile string, err error) (*VaultConfig, error) {
 		vaultConf.PersistConf.DataFile = defaultPersistDataFile
 	}
 	return &vaultConf, nil
+}
+
+func CreateFileIfNeeded(file string) (string, error) {
+
+	if strings.HasPrefix(file, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		file = home + strings.TrimPrefix(file, "~")
+	}
+
+	absPath, err := filepath.Abs(file)
+	if err != nil {
+		return "", err
+	}
+
+	absDir := filepath.Dir(absPath)
+
+	dInfo, err := os.Stat(absDir)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(absDir, 0755)
+		if err != nil {
+			return "", err
+		}
+	} else if err != nil {
+		return "", err
+	} else {
+		if !dInfo.IsDir() {
+			return "", errors.New("dir " + absDir + " is not a dir")
+		}
+	}
+
+	fInfo, err := os.Stat(absPath)
+	if os.IsNotExist(err) {
+		_, err = os.Create(absPath)
+		if err != nil {
+			return "", err
+		}
+	} else if err != nil {
+		return "", err
+	} else {
+		if !fInfo.Mode().IsRegular() {
+			return "", errors.New("file " + absPath + " is not a regular file")
+		}
+	}
+
+	return absPath, nil
 }

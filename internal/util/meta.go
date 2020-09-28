@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"github.com/psy-core/psysswd-vault/config"
 	"io/ioutil"
@@ -16,12 +15,12 @@ import (
 )
 
 func ModifyAccount(conf *config.VaultConfig, username, password string) error {
-	err := checkFileExist(conf.PersistConf.MetaFile)
+	metaFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.MetaFile)
 	if err != nil {
 		return err
 	}
 
-	content, _ := ioutil.ReadFile(conf.PersistConf.MetaFile)
+	content, _ := ioutil.ReadFile(metaFilePath)
 
 	var buf bytes.Buffer
 	var userLen, passLen int32
@@ -86,17 +85,17 @@ func ModifyAccount(conf *config.VaultConfig, username, password string) error {
 		buf.Write(newPass)
 	}
 
-	return ioutil.WriteFile(conf.PersistConf.MetaFile, buf.Bytes(), 0644)
+	return ioutil.WriteFile(metaFilePath, buf.Bytes(), 0644)
 }
 
 func Auth(conf *config.VaultConfig, username, password string) (bool, bool) {
 
-	err := checkFileExist(conf.PersistConf.MetaFile)
+	metaFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.MetaFile)
 	if err != nil {
 		fmt.Println("some unexpected error happen for meta file:", err)
 		os.Exit(1)
 	}
-	content, _ := ioutil.ReadFile(conf.PersistConf.MetaFile)
+	content, _ := ioutil.ReadFile(metaFilePath)
 
 	var userLen, passLen int32
 	var offset int32 = 0
@@ -131,22 +130,4 @@ func Auth(conf *config.VaultConfig, username, password string) (bool, bool) {
 	}
 
 	return false, false
-}
-
-func checkFileExist(file string) error {
-	info, err := os.Stat(file)
-	if os.IsNotExist(err) {
-		_, err = os.Create(file)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if !info.Mode().IsRegular() {
-		return errors.New("file is inRegular")
-	}
-	return nil
 }

@@ -13,20 +13,20 @@ import (
 
 func RangePersistData(conf *config.VaultConfig, f func(key, data []byte)) error {
 
-	err := checkFileExist(conf.PersistConf.IndexFile)
+	indexFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.IndexFile)
 	if err != nil {
 		return err
 	}
-	err = checkFileExist(conf.PersistConf.DataFile)
+	dataFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.DataFile)
 	if err != nil {
 		return err
 	}
 
-	indexData, err := ioutil.ReadFile(conf.PersistConf.IndexFile)
+	indexData, err := ioutil.ReadFile(indexFilePath)
 	if err != nil {
 		return err
 	}
-	bodyData, err := ioutil.ReadFile(conf.PersistConf.DataFile)
+	bodyData, err := ioutil.ReadFile(dataFilePath)
 	if err != nil {
 		return err
 	}
@@ -52,20 +52,20 @@ func RangePersistData(conf *config.VaultConfig, f func(key, data []byte)) error 
 func ModifyData(conf *config.VaultConfig, originKey, data []byte) error {
 	//使用master password加盐生成aes-256的key
 
-	err := checkFileExist(conf.PersistConf.IndexFile)
+	indexFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.IndexFile)
 	if err != nil {
 		return err
 	}
-	err = checkFileExist(conf.PersistConf.DataFile)
+	dataFilePath, err := config.CreateFileIfNeeded(conf.PersistConf.DataFile)
 	if err != nil {
 		return err
 	}
 
-	indexData, err := ioutil.ReadFile(conf.PersistConf.IndexFile)
+	indexData, err := ioutil.ReadFile(indexFilePath)
 	if err != nil {
 		return err
 	}
-	bodyData, err := ioutil.ReadFile(conf.PersistConf.DataFile)
+	bodyData, err := ioutil.ReadFile(dataFilePath)
 	if err != nil {
 		return err
 	}
@@ -90,8 +90,8 @@ func ModifyData(conf *config.VaultConfig, originKey, data []byte) error {
 				indexData[i+8+j] = updateByte[j]
 			}
 
-			ioutil.WriteFile(conf.PersistConf.DataFile, bodyData, 0644)
-			ioutil.WriteFile(conf.PersistConf.IndexFile, indexData, 0644)
+			ioutil.WriteFile(dataFilePath, bodyData, 0644)
+			ioutil.WriteFile(indexFilePath, indexData, 0644)
 			return nil
 		}
 	}
@@ -109,8 +109,8 @@ func ModifyData(conf *config.VaultConfig, originKey, data []byte) error {
 	binary.Write(&addIndexBuf, binary.LittleEndian, int32(keyLen))
 	indexData = append(indexData, addIndexBuf.Bytes()...)
 
-	ioutil.WriteFile(conf.PersistConf.DataFile, bodyData, 0644)
-	ioutil.WriteFile(conf.PersistConf.IndexFile, indexData, 0644)
+	ioutil.WriteFile(dataFilePath, bodyData, 0644)
+	ioutil.WriteFile(indexFilePath, indexData, 0644)
 
 	return nil
 }
