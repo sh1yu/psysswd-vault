@@ -22,7 +22,8 @@ var findCmd = &cobra.Command{
 		isPlain, err := cmd.Flags().GetBool("plain")
 		checkError(err)
 
-		runFind(isPlain, vaultConf.PersistConf.DataFile, username, password, args[0])
+		err = runFind(isPlain, vaultConf.PersistConf.DataFile, username, password, args[0])
+		checkError(err)
 	},
 }
 
@@ -31,13 +32,15 @@ func init() {
 	rootCmd.AddCommand(findCmd)
 }
 
-func runFind(isPlain bool, dataFile, username, password, searchKey string) {
+func runFind(isPlain bool, dataFile, username, password, searchKey string) error {
 
 	printHeader := []string{"账号", "用户名", "密码", "额外信息", "更新时间"}
 	printData := make([][]string, 0)
 
 	decodeRecords, err := persist.QueryRecord(dataFile, username, password, searchKey)
-	checkError(err)
+	if err != nil {
+		return err
+	}
 
 	for _, record := range decodeRecords {
 		if isPlain {
@@ -60,6 +63,7 @@ func runFind(isPlain bool, dataFile, username, password, searchKey string) {
 	}
 
 	tablePrint(printData, printHeader)
+	return nil
 }
 
 func tablePrint(data [][]string, header []string) {

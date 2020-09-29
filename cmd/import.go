@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"bufio"
-	"fmt"
+	"errors"
 	"github.com/psy-core/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 	"io"
@@ -24,7 +24,8 @@ var importCmd = &cobra.Command{
 		checkError(err)
 		objName, err := cmd.Flags().GetString("obj")
 		checkError(err)
-		runImport(vaultConf.PersistConf.DataFile, targetType, objName, username)
+		err = runImport(vaultConf.PersistConf.DataFile, targetType, objName, username)
+		checkError(err)
 	},
 }
 
@@ -34,12 +35,14 @@ func init() {
 	rootCmd.AddCommand(importCmd)
 }
 
-func runImport(dataFile, targetType, objName, username string) {
+func runImport(dataFile, targetType, objName, username string) error {
 
 	switch targetType {
 	case "text":
 		file, err := os.Open(objName)
-		checkError(err)
+		if err != nil {
+			return err
+		}
 		reader := bufio.NewReader(file)
 
 		records := make([]*persist.AccountRecord, 0)
@@ -48,7 +51,9 @@ func runImport(dataFile, targetType, objName, username string) {
 			if err == io.EOF {
 				break
 			}
-			checkError(err)
+			if err != nil {
+				return err
+			}
 
 			token := strings.FieldsFunc(strings.TrimSpace(line), func(r rune) bool {
 				return r == 0x1f
@@ -74,10 +79,8 @@ func runImport(dataFile, targetType, objName, username string) {
 			records = append(records, &accountRecord)
 		}
 
-		err = persist.ImportRecord(dataFile, records)
-		checkError(err)
+		return persist.ImportRecord(dataFile, records)
 	default:
-		fmt.Println("invalid target types.")
-		os.Exit(1)
+		return errors.New("invalid target types")
 	}
 }

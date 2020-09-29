@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/psy-core/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 	"io/ioutil"
-	"os"
 	"time"
 )
 
@@ -24,7 +24,9 @@ var exportCmd = &cobra.Command{
 		objName, err := cmd.Flags().GetString("obj")
 		checkError(err)
 
-		runExport(vaultConf.PersistConf.DataFile, targetType, objName, username)
+		err = runExport(vaultConf.PersistConf.DataFile, targetType, objName, username)
+		checkError(err)
+		fmt.Println("export complete.")
 	},
 }
 
@@ -34,10 +36,12 @@ func init() {
 	rootCmd.AddCommand(exportCmd)
 }
 
-func runExport(dataFile, targetType, objName, username string) {
+func runExport(dataFile, targetType, objName, username string) error {
 
 	datas, err := persist.DumpRecord(dataFile, username)
-	checkError(err)
+	if err != nil {
+		return err
+	}
 
 	switch targetType {
 	case "text":
@@ -49,12 +53,8 @@ func runExport(dataFile, targetType, objName, username string) {
 			buf.WriteString(line)
 		}
 
-		err = ioutil.WriteFile(objName, buf.Bytes(), 0644)
-		checkError(err)
-
-		fmt.Println("export complete.")
+		return ioutil.WriteFile(objName, buf.Bytes(), 0644)
 	default:
-		fmt.Println("invalid target types.")
-		os.Exit(1)
+		return errors.New("invalid target types")
 	}
 }

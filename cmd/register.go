@@ -14,10 +14,12 @@ var registerCmd = &cobra.Command{
 	Short: "register a new master account for storage password",
 	Long:  `register a new master account for storage password`,
 	Args:  cobra.ExactArgs(1),
-	Run:   func(cmd *cobra.Command, args []string){
+	Run: func(cmd *cobra.Command, args []string) {
 		vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
 		checkError(err)
-		runRegister(vaultConf.PersistConf.DataFile, args[0])
+		err = runRegister(vaultConf.PersistConf.DataFile, args[0])
+		checkError(err)
+		fmt.Println("register success.")
 	},
 }
 
@@ -25,13 +27,13 @@ func init() {
 	rootCmd.AddCommand(registerCmd)
 }
 
-func runRegister(dataFile, accountUser string) {
-	fmt.Printf("Please input your new password for account '%s' :",accountUser)
+func runRegister(dataFile, accountUser string) error {
+	fmt.Printf("Please input your new password for account '%s' :", accountUser)
 	passwordBytes, err := gopass.GetPasswdMasked()
-	checkError(err)
+	if err != nil {
+		return err
+	}
 
-	err = persist.ModifyUser(dataFile, accountUser, string(passwordBytes))
-	checkError(err)
+	return persist.ModifyUser(dataFile, accountUser, string(passwordBytes))
 
-	fmt.Println("register success.")
 }

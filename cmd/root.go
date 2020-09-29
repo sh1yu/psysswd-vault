@@ -17,7 +17,11 @@ var rootCmd = &cobra.Command{
 	Long:  `A password vault for your password security.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		vaultConf, username, password := runPreCheck(cmd)
-		runLogin(vaultConf.PersistConf.DataFile, username, password)
+
+		servePort, err := cmd.Flags().GetString("serve")
+		checkError(err)
+
+		runLogin(vaultConf.PersistConf.DataFile, username, password, servePort)
 	},
 }
 
@@ -25,12 +29,11 @@ func init() {
 	rootCmd.PersistentFlags().StringP("conf", "c", "", "config file")
 	rootCmd.PersistentFlags().StringP("username", "u", "", "give your username")
 	rootCmd.PersistentFlags().StringP("password", "p", "", "give your master password")
+	rootCmd.PersistentFlags().StringP("serve", "s", "", "start a server for sync with given port")
 }
 
 func Execute() {
-
 	checkError(rootCmd.Execute())
-
 }
 
 func checkError(e error) {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -18,7 +19,11 @@ var loginCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		vaultConf, username, password := runPreCheck(cmd)
-		runLogin(vaultConf.PersistConf.DataFile, username, password)
+
+		servePort, err := cmd.Flags().GetString("serve")
+		checkError(err)
+
+		runLogin(vaultConf.PersistConf.DataFile, username, password, servePort)
 	},
 }
 
@@ -26,7 +31,22 @@ func init() {
 	rootCmd.AddCommand(loginCmd)
 }
 
-func runLogin(dataFile, username, password string) {
+func runLogin(dataFile, username, password, servePort string) {
+
+	ch := make(chan struct{})
+
+	if servePort != "" {
+		go func() {
+			http.HandleFunc("/sync", syncHandlerWrapper(dataFile))
+
+			fmt.Println("server start at ", servePort, "...")
+			close(ch)
+			err := http.ListenAndServe(":"+servePort, nil)
+			checkError(err)
+		}()
+	}
+
+	<-ch
 	//give a shell
 	stdinReader := bufio.NewReader(os.Stdin)
 	for {
@@ -59,7 +79,12 @@ func runLogin(dataFile, username, password string) {
 
 			_, ok1 := flags["-g"]
 			_, ok2 := flags["--genpass"]
-			runAdd(dataFile, username, password, ok1 || ok2, args)
+			err = runAdd(dataFile, username, password, ok1 || ok2, args)
+			if err != nil {
+				fmt.Println("error:", err, "usage: add <account-name> <account-user> [extra-message] [-g]")
+				continue
+			}
+			fmt.Printf("add account %s success.\n", args[0])
 		case "find":
 			_, args, flags, err := parseArgs(token, map[string]int{"-P": 0, "--plain": 0})
 			if err != nil {
@@ -73,7 +98,11 @@ func runLogin(dataFile, username, password string) {
 
 			_, ok1 := flags["-P"]
 			_, ok2 := flags["--plain"]
-			runFind(ok1 || ok2, dataFile, username, password, args[0])
+			err = runFind(ok1 || ok2, dataFile, username, password, args[0])
+			if err != nil {
+				fmt.Println("error:", err, " usage: find <account-keyword> [-P]")
+				continue
+			}
 		case "list":
 			_, args, flags, err := parseArgs(token, map[string]int{"-P": 0, "--plain": 0})
 			if err != nil {
@@ -86,7 +115,11 @@ func runLogin(dataFile, username, password string) {
 			}
 			_, ok1 := flags["-P"]
 			_, ok2 := flags["--plain"]
-			runFind(ok1 || ok2, dataFile, username, password, "")
+			err = runFind(ok1 || ok2, dataFile, username, password, "")
+			if err != nil {
+				fmt.Println("error:", err, " usage: find <account-keyword> [-P]")
+				continue
+			}
 		case "sync":
 			if len(token) != 2 {
 				fmt.Println("usage: sync <remote-addr>")

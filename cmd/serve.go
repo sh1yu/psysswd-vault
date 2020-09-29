@@ -20,7 +20,7 @@ var serveCmd = &cobra.Command{
 		vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
 		checkError(err)
 
-		http.HandleFunc("/sync", syncHandlerWrapper(vaultConf))
+		http.HandleFunc("/sync", syncHandlerWrapper(vaultConf.PersistConf.DataFile))
 
 		fmt.Println("server start at ", args[0], "...")
 		err = http.ListenAndServe(":"+args[0], nil)
@@ -32,7 +32,7 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-func syncHandlerWrapper(conf *config.VaultConfig) func(w http.ResponseWriter, r *http.Request) {
+func syncHandlerWrapper(dataFile string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -49,7 +49,7 @@ func syncHandlerWrapper(conf *config.VaultConfig) func(w http.ResponseWriter, r 
 			return
 		}
 
-		exist, valid, err := persist.CheckUser(conf.PersistConf.DataFile, data["username"], data["password"])
+		exist, valid, err := persist.CheckUser(dataFile, data["username"], data["password"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(err.Error()))
@@ -66,7 +66,7 @@ func syncHandlerWrapper(conf *config.VaultConfig) func(w http.ResponseWriter, r 
 			return
 		}
 
-		records, err := persist.DumpRecord(conf.PersistConf.DataFile, data["username"])
+		records, err := persist.DumpRecord(dataFile, data["username"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(err.Error()))

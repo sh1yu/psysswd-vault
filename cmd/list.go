@@ -16,7 +16,8 @@ var listCmd = &cobra.Command{
 		isPlain, err := cmd.Flags().GetBool("plain")
 		checkError(err)
 
-		runFind(isPlain, vaultConf.PersistConf.DataFile, username, password, "")
+		err = runFind(isPlain, vaultConf.PersistConf.DataFile, username, password, "")
+		checkError(err)
 	},
 }
 
