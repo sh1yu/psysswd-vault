@@ -33,9 +33,8 @@ func init() {
 
 func runLogin(dataFile, username, password, servePort string) {
 
-	ch := make(chan struct{})
-
 	if servePort != "" {
+		ch := make(chan struct{})
 		go func() {
 			http.HandleFunc("/sync", syncHandlerWrapper(dataFile))
 
@@ -44,9 +43,9 @@ func runLogin(dataFile, username, password, servePort string) {
 			err := http.ListenAndServe(":"+servePort, nil)
 			checkError(err)
 		}()
+		<-ch
 	}
 
-	<-ch
 	//give a shell
 	stdinReader := bufio.NewReader(os.Stdin)
 	for {
