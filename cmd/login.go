@@ -41,7 +41,7 @@ func runLogin(dataFile, username, password string) {
 
 		token := strings.Fields(line)
 		if len(token) == 0 {
-			fmt.Println("usage: add | find | list | exit ")
+			fmt.Println("usage: add | find | list | sync | exit ")
 			continue
 		}
 
@@ -87,10 +87,16 @@ func runLogin(dataFile, username, password string) {
 			_, ok1 := flags["-P"]
 			_, ok2 := flags["--plain"]
 			runFind(ok1 || ok2, dataFile, username, password, "")
+		case "sync":
+			if len(token) != 2 {
+				fmt.Println("usage: sync <remote-addr>")
+				continue
+			}
+			runSync(dataFile, username, password, token[1])
 		case "exit":
 			os.Exit(0)
 		default:
-			fmt.Println("usage: add | find | list | exit ")
+			fmt.Println("usage: add | find | list | sync | exit ")
 		}
 	}
 }
