@@ -124,7 +124,11 @@ func runLogin(dataFile, username, password, servePort string) {
 				fmt.Println("usage: sync <remote-addr>")
 				continue
 			}
-			runSync(dataFile, username, password, token[1])
+			err = runSync(dataFile, username, password, token[1])
+			if err != nil {
+				fmt.Println("error:", err, " usage: sync <remote-addr>")
+				continue
+			}
 		case "exit":
 			os.Exit(0)
 		default:
