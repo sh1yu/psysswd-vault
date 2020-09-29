@@ -4,6 +4,7 @@ import (
 	"fmt"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/psy-core/psysswd-vault/config"
+	"github.com/psy-core/psysswd-vault/persist"
 	"os"
 
 	"github.com/howeyc/gopass"
@@ -14,7 +15,10 @@ var rootCmd = &cobra.Command{
 	Use:   os.Args[0],
 	Short: "A password vault for your password security.",
 	Long:  `A password vault for your password security.`,
-	Run:   RunLogin,
+	Run: func(cmd *cobra.Command, args []string) {
+		vaultConf, username, password := runPreCheck(cmd)
+		runLogin(vaultConf.PersistConf.DataFile, username, password)
+	},
 }
 
 func init() {
@@ -68,4 +72,25 @@ func readUsernameAndPassword(cmd *cobra.Command, conf *config.VaultConfig) (stri
 	}
 
 	return username, password, nil
+}
+
+func runPreCheck(cmd *cobra.Command) (*config.VaultConfig, string, string) {
+
+	vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
+	checkError(err)
+	username, password, err := readUsernameAndPassword(cmd, vaultConf)
+	checkError(err)
+
+	exist, valid, err := persist.CheckUser(vaultConf.PersistConf.DataFile, username, password)
+	checkError(err)
+	if !exist {
+		fmt.Println("user not registered: ", username)
+		os.Exit(1)
+	}
+	if !valid {
+		fmt.Println("Permission Denied.")
+		os.Exit(1)
+	}
+
+	return vaultConf, username, password
 }

@@ -3,12 +3,92 @@ package persist
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/psy-core/psysswd-vault/internal/constant"
 	"github.com/psy-core/psysswd-vault/internal/util"
 	"golang.org/x/crypto/pbkdf2"
 	"time"
 )
+
+func DumpRecord(dataFile string, masterUserName string) ([]*AccountRecord, error) {
+	db, err := initialDB(dataFile)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var datas []*AccountRecord
+	err = db.
+		Where("user_name = ?", masterUserName).
+		Find(&datas).Error
+	return datas, err
+}
+
+func ImportRecord(dataFile string, records []*AccountRecord) error {
+	db, err := initialDB(dataFile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	totalCount := 0
+	insertCount := 0
+	updateCount := 0
+	ignoreCount := 0
+	errCount := 0
+
+	for _, record := range records {
+		totalCount++
+		var exist AccountRecord
+		err = db.Where("user_name = ?", record.UserName).Where("name=?", record.Name).First(&exist).Error
+		if err == gorm.ErrRecordNotFound {
+			data := AccountRecord{
+				UserName:        record.UserName,
+				Name:            record.Name,
+				Description:     record.Description,
+				LoginName:       record.LoginName,
+				Salt:            record.Salt,
+				LoginPasswordEn: record.LoginPasswordEn,
+				ExtraMessage:    record.ExtraMessage,
+				CreateTime:      record.CreateTime,
+				UpdateTime:      record.UpdateTime,
+			}
+			err = db.Save(&data).Error
+			if err != nil {
+				fmt.Println("import account", record.Name, "err: ", err)
+				errCount++
+			} else {
+				insertCount++
+			}
+		} else {
+			//数据库中存在的记录较老，需要更新
+			if exist.UpdateTime.Before(record.UpdateTime) {
+				exist.Description = record.Description
+				exist.LoginName = record.LoginName
+				exist.Salt = record.Salt
+				exist.LoginPasswordEn = record.LoginPasswordEn
+				exist.ExtraMessage = record.ExtraMessage
+				exist.CreateTime = record.CreateTime
+				exist.UpdateTime = record.UpdateTime
+				err = db.Save(&exist).Error
+				if err != nil {
+					fmt.Println("import account", record.Name, "err: ", err)
+					errCount++
+				} else {
+					updateCount++
+				}
+			} else {
+				ignoreCount++
+			}
+		}
+	}
+
+	fmt.Printf("import complete. total: %d, insert: %d, update: %d, ignore:%d, err: %d\n",
+		totalCount, insertCount, updateCount, ignoreCount, errCount)
+
+	return nil
+}
 
 func QueryRecord(dataFile string, masterUserName, masterPassword string, recordNameKeyword string) ([]*DecodedRecord, error) {
 
