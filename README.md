@@ -40,7 +40,7 @@ Use "./psysswd-vault [command] --help" for more information about a command.
 ```
 
 - list all accounts (and use `-P` can show password directly):
-```
+```bash
 ./psysswd-vault list
 please input your master password: *********
 +---------------------+---------------------+----------------------+-------------------------------+---------------------+
@@ -53,7 +53,7 @@ please input your master password: *********
 
 - search accounts and show password:
 ```bash
-./psysswd-valut find test -P
+./psysswd-vault find test -P
 please input your master password: *********
 +---------------------+---------------------+----------------------+-------------------------------+---------------------+
 |        账号         |       用户名         |         密码         |           额外信息             |      更新时间       |
