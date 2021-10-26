@@ -102,11 +102,13 @@ func QueryRecord(dataFile string, masterUserName, masterPassword string, recordN
 	if recordNameKeyword == "" {
 		err = db.
 			Where("user_name = ?", masterUserName).
+			Order("name").
 			Find(&datas).Error
 	} else {
 		err = db.
 			Where("user_name = ?", masterUserName).
 			Where("name like ?", "%"+recordNameKeyword+"%").
+			Order("name").
 			Find(&datas).Error
 	}
 
@@ -198,4 +200,26 @@ func ModifyRecord(dbFile, masterUserName, masterPassword string, newData *Decode
 	oldData.ExtraMessage = newData.ExtraMessage
 	oldData.UpdateTime = time.Now()
 	return db.Save(&oldData).Error
+}
+
+func RemoveRecord(dbFile, masterUserName, recordName string) error {
+
+	db, err := initialDB(dbFile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	var oldData AccountRecord
+	err = db.
+		Where("user_name = ?", masterUserName).
+		Where("name=?", recordName).
+		First(&oldData).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil
+	}
+	return db.Delete(oldData).Error
 }
