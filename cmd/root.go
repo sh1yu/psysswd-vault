@@ -55,7 +55,7 @@ func readUsernameAndPassword(cmd *cobra.Command, conf *config.VaultConfig) (stri
 	}
 
 	if username == "" {
-		fmt.Println("please give your master user name with -u or in config file.")
+		fmt.Println("please give your master user name with -u or 'user.defaultUserName' in config file.")
 		os.Exit(1)
 	}
 
