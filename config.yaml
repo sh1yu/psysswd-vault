@@ -5,3 +5,6 @@ user:
 #   meta_path: ./meta.data
 #   index_path: ./index.data
 #   data_path: ./file.data
+
+# remote:
+#   server_addr: https://101.43.106.28:8888

@@ -18,6 +18,7 @@ const (
 type VaultConfig struct {
 	UserConf    UserConfig    `yaml:"user"`
 	PersistConf PersistConfig `yaml:"persist"`
+	RemoteConf  RemoteConfig  `yaml:"remote"`
 }
 
 type UserConfig struct {
@@ -26,6 +27,10 @@ type UserConfig struct {
 
 type PersistConfig struct {
 	DataFile string `yaml:"data_path"`
+}
+
+type RemoteConfig struct {
+	ServerAddr string `yaml:"server_addr"`
 }
 
 func InitConf(configFile string, err error) (*VaultConfig, error) {
