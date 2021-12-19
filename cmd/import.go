@@ -3,7 +3,7 @@ package cmd
 import (
 	"bufio"
 	"errors"
-	"github.com/psy-core/psysswd-vault/persist"
+	"github.com/sh1yu/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 	"io"
 	"os"

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
-	"github.com/psy-core/psysswd-vault/internal/constant"
-	"github.com/psy-core/psysswd-vault/persist"
+	"github.com/sh1yu/psysswd-vault/internal/constant"
+	"github.com/sh1yu/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 	"os"
 )

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"github.com/psy-core/psysswd-vault/config"
-	"github.com/psy-core/psysswd-vault/persist"
+	"github.com/sh1yu/psysswd-vault/config"
+	"github.com/sh1yu/psysswd-vault/persist"
 	"os"
 
 	"github.com/howeyc/gopass"

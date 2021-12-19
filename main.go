@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/psy-core/psysswd-vault/cmd"
+	"github.com/sh1yu/psysswd-vault/cmd"
 )
 
 func main() {

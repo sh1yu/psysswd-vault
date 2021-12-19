@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"github.com/psy-core/psysswd-vault/internal/util"
+	"github.com/sh1yu/psysswd-vault/internal/util"
 	"testing"
 
 	"golang.org/x/crypto/pbkdf2"

@@ -1,4 +1,4 @@
-module github.com/psy-core/psysswd-vault
+module github.com/sh1yu/psysswd-vault
 
 go 1.13
 
@@ -9,9 +9,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/spf13/cobra v1.1.1
-	github.com/stretchr/testify v1.6.1
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8
-	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c // indirect
 )

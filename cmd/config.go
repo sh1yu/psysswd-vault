@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/psy-core/psysswd-vault/config"
+	"github.com/sh1yu/psysswd-vault/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )

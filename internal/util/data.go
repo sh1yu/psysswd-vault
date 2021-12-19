@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
-	"github.com/psy-core/psysswd-vault/config"
-	"github.com/psy-core/psysswd-vault/internal/constant"
+	"github.com/sh1yu/psysswd-vault/config"
+	"github.com/sh1yu/psysswd-vault/internal/constant"
 	"golang.org/x/crypto/pbkdf2"
 	"io/ioutil"
 )

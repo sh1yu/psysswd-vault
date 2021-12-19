@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"github.com/howeyc/gopass"
-	"github.com/psy-core/psysswd-vault/internal/util"
-	"github.com/psy-core/psysswd-vault/persist"
+	"github.com/sh1yu/psysswd-vault/internal/util"
+	"github.com/sh1yu/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 )
 

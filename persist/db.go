@@ -2,7 +2,7 @@ package persist
 
 import (
 	"github.com/jinzhu/gorm"
-	"github.com/psy-core/psysswd-vault/config"
+	"github.com/sh1yu/psysswd-vault/config"
 )
 
 func initialDB(dbFile string) (*gorm.DB, error) {

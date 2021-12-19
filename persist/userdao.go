@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"github.com/psy-core/psysswd-vault/internal/constant"
-	"github.com/psy-core/psysswd-vault/internal/util"
+	"github.com/sh1yu/psysswd-vault/internal/constant"
+	"github.com/sh1yu/psysswd-vault/internal/util"
 	"golang.org/x/crypto/pbkdf2"
 	"time"
 )

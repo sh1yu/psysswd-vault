@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/howeyc/gopass"
-	"github.com/psy-core/psysswd-vault/config"
-	"github.com/psy-core/psysswd-vault/persist"
+	"github.com/sh1yu/psysswd-vault/config"
+	"github.com/sh1yu/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 )
 
