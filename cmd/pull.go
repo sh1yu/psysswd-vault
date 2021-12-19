@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,6 +57,9 @@ func runPull(dataFile, username, password, remoteServerAddr string) error {
 	}
 
 	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
 		Timeout: 10 * time.Second,
 	}
 	resp, err := client.Post(remoteServerAddr+"/pull", "application/json", bytes.NewReader(dataJson))
