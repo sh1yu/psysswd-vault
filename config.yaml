@@ -8,3 +8,7 @@ user:
 
 # remote:
 #   server_addr: https://101.43.106.28:8888
+
+# credentials:
+#   - user: psy
+#     token: abcdef

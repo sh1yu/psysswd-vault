@@ -21,7 +21,7 @@ var pullCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, _ []string) {
 
-		vaultConf, username, password := runPreCheck(cmd)
+		vaultConf, username, _ := runPreCheck(cmd)
 
 		remoteServerAddr, err := cmd.Flags().GetString("remote")
 		checkError(err)
@@ -35,7 +35,13 @@ var pullCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = runPull(vaultConf.PersistConf.DataFile, username, password, remoteServerAddr)
+		remoteToken := getRemoteCredential(vaultConf.Credentials, username)
+		if remoteToken == "" {
+			fmt.Println("please config 'credentials' for user " + username + " in config file before pull.")
+			os.Exit(1)
+		}
+
+		err = runPull(vaultConf.PersistConf.DataFile, username, remoteToken, remoteServerAddr)
 		checkError(err)
 	},
 }
@@ -45,12 +51,11 @@ func init() {
 	rootCmd.AddCommand(pullCmd)
 }
 
-func runPull(dataFile, username, password, remoteServerAddr string) error {
+func runPull(dataFile, username, remoteToken, remoteServerAddr string) error {
 
 	fmt.Printf("Pulling for username %v from remote %v ...\n", username, remoteServerAddr)
 
-	//fixme: about password
-	data := map[string]string{"username": username, "password": password}
+	data := map[string]string{"username": username, "token": remoteToken}
 	dataJson, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -62,7 +67,7 @@ func runPull(dataFile, username, password, remoteServerAddr string) error {
 		},
 		Timeout: 10 * time.Second,
 	}
-	resp, err := client.Post(remoteServerAddr+"/pull", "application/json", bytes.NewReader(dataJson))
+	resp, err := client.Post(remoteServerAddr+"/down", "application/json", bytes.NewReader(dataJson))
 	if err != nil {
 		return err
 	}

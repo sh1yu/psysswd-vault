@@ -21,8 +21,8 @@ var serveCmd = &cobra.Command{
 		vaultConf, err := config.InitConf(cmd.Flags().GetString("conf"))
 		checkError(err)
 
-		http.HandleFunc("/down", downHandlerWrapper(vaultConf.PersistConf.DataFile))
-		http.HandleFunc("/up", upHandlerWrapper(vaultConf.PersistConf.DataFile))
+		http.HandleFunc("/down", downHandlerWrapper(vaultConf))
+		http.HandleFunc("/up", upHandlerWrapper(vaultConf))
 
 		fmt.Println("server start at ", args[0], "...")
 		err = http.ListenAndServe(":"+args[0], nil)
@@ -35,7 +35,7 @@ func init() {
 }
 
 // 接收客户端的下载数据请求（拉取）
-func downHandlerWrapper(dataFile string) func(w http.ResponseWriter, r *http.Request) {
+func downHandlerWrapper(vaultConf *config.VaultConfig) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -52,24 +52,14 @@ func downHandlerWrapper(dataFile string) func(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		exist, valid, err := persist.CheckUser(dataFile, data["username"], data["password"])
+		err = checkRemoteCredential(vaultConf.Credentials, data["username"], data["token"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
-		if !exist {
-			w.WriteHeader(http.StatusForbidden)
-			_, _ = w.Write([]byte("user not registered: " + data["username"]))
-			return
-		}
-		if !valid {
-			w.WriteHeader(http.StatusUnauthorized)
-			_, _ = w.Write([]byte("Permission Denied."))
-			return
-		}
 
-		records, err := persist.DumpRecord(dataFile, data["username"])
+		records, err := persist.DumpRecord(vaultConf.PersistConf.DataFile, data["username"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(err.Error()))
@@ -88,7 +78,7 @@ func downHandlerWrapper(dataFile string) func(w http.ResponseWriter, r *http.Req
 }
 
 // 接收客户端的上传数据请求（推送）
-func upHandlerWrapper(dataFile string) func(w http.ResponseWriter, r *http.Request) {
+func upHandlerWrapper(vaultConf *config.VaultConfig) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -105,20 +95,10 @@ func upHandlerWrapper(dataFile string) func(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		exist, valid, err := persist.CheckUser(dataFile, data["username"], data["password"])
+		err = checkRemoteCredential(vaultConf.Credentials, data["username"], data["token"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(err.Error()))
-			return
-		}
-		if !exist {
-			w.WriteHeader(http.StatusForbidden)
-			_, _ = w.Write([]byte("user not registered: " + data["username"]))
-			return
-		}
-		if !valid {
-			w.WriteHeader(http.StatusUnauthorized)
-			_, _ = w.Write([]byte("Permission Denied."))
 			return
 		}
 
@@ -137,7 +117,7 @@ func upHandlerWrapper(dataFile string) func(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		err = persist.ImportRecord(dataFile, records)
+		err = persist.ImportRecord(vaultConf.PersistConf.DataFile, records)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(err.Error()))

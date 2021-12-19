@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/psy-core/psysswd-vault/config"
@@ -90,4 +91,24 @@ func runPreCheck(cmd *cobra.Command) (*config.VaultConfig, string, string) {
 	}
 
 	return vaultConf, username, password
+}
+
+func checkRemoteCredential(credentials []config.CredentialConfig, username, token string) error {
+	for _, credential := range credentials {
+		if username == credential.User && token == credential.Token {
+			return nil
+		}
+	}
+
+	return errors.New("credential invalid for user " + username)
+}
+
+func getRemoteCredential(credentials []config.CredentialConfig, username string) string {
+	for _, credential := range credentials {
+		if credential.User == username {
+			return credential.Token
+		}
+	}
+
+	return ""
 }

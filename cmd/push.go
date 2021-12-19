@@ -22,7 +22,7 @@ var pushCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, _ []string) {
 
-		vaultConf, username, password := runPreCheck(cmd)
+		vaultConf, username, _ := runPreCheck(cmd)
 
 		remoteServerAddr, err := cmd.Flags().GetString("remote")
 		checkError(err)
@@ -36,7 +36,13 @@ var pushCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = runPush(vaultConf.PersistConf.DataFile, username, password, remoteServerAddr)
+		remoteToken := getRemoteCredential(vaultConf.Credentials, username)
+		if remoteToken == "" {
+			fmt.Println("please config 'credentials' for user " + username + " in config file before push.")
+			os.Exit(1)
+		}
+
+		err = runPush(vaultConf.PersistConf.DataFile, username, remoteToken, remoteServerAddr)
 		checkError(err)
 	},
 }
@@ -46,7 +52,7 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 }
 
-func runPush(dataFile, username, password, remoteServerAddr string) error {
+func runPush(dataFile, username, remoteToken, remoteServerAddr string) error {
 
 	fmt.Printf("Push for username %v to remote %v ...\n", username, remoteServerAddr)
 
@@ -61,8 +67,7 @@ func runPush(dataFile, username, password, remoteServerAddr string) error {
 	}
 	recordsBase64 := base64.StdEncoding.EncodeToString(recordsDataJson)
 
-	//fixme: about password
-	data := map[string]string{"username": username, "password": password, "records": recordsBase64}
+	data := map[string]string{"username": username, "token": remoteToken, "records": recordsBase64}
 	dataJson, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -74,7 +79,7 @@ func runPush(dataFile, username, password, remoteServerAddr string) error {
 		},
 		Timeout: 10 * time.Second,
 	}
-	resp, err := client.Post(remoteServerAddr+"/push", "application/json", bytes.NewReader(dataJson))
+	resp, err := client.Post(remoteServerAddr+"/up", "application/json", bytes.NewReader(dataJson))
 	if err != nil {
 		return err
 	}
