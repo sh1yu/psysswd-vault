@@ -1,14 +1,16 @@
+# set your default username, then you don't need to use -u parameter each time.
 user:
-  defaultUserName: psy
+  defaultUserName: user1
 
+# change default persist files.
 # persist:
-#   meta_path: ./meta.data
-#   index_path: ./index.data
 #   data_path: ./file.data
 
+# # set the default remote server addr, then you don't need to use -r parameter each time you use pull or push command.
 # remote:
-#   server_addr: https://101.43.106.28:8888
+#   server_addr: https://127.0.0.1:8888
 
+# # it must be configured in remote server and local storage. only request which user and token matched can do pull or push operations.
 # credentials:
-#   - user: psy
+#   - user: user1
 #     token: abcdef

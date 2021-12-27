@@ -65,6 +65,10 @@ please input your master password: ***********
 +---------------------+---------------------+----------------------+-------------------------------+---------------------+
 ```
 
+you must do `pvlt register` first before you use. see `pvlt help register` for more help.
+
+and you can config `user.defaultUserName` in `config.yaml` to avoid you use `-u` parameter for convenience.
+
 # Remote sync
 
 use `pvlt serve` then you get a remote server:
@@ -86,6 +90,10 @@ Pulling for username user1 from remote http://127.0.0.1:8888 ...
 import complete. total: 24, insert: 0, update: 0, ignore:24, err: 0
 ```
 
-And you can use "pvlt help <commnad>" for more help.
+you must configure `credentials` configurations before you use `push` or `pull` command.
+
+you can config `remote.server_addr` in `config.yaml` to avoid use `-r` parameter for convenience.
+
+And you can use `pvlt help <command>` for more help.
 
 enjoy!
