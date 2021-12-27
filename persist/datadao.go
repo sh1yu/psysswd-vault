@@ -51,8 +51,10 @@ func ImportRecord(dataFile string, records []*AccountRecord) error {
 				Salt:            record.Salt,
 				LoginPasswordEn: record.LoginPasswordEn,
 				ExtraMessage:    record.ExtraMessage,
+				IsRemoved:       record.IsRemoved,
 				CreateTime:      record.CreateTime,
 				UpdateTime:      record.UpdateTime,
+				RemoveTime:      record.RemoveTime,
 			}
 			err = db.Save(&data).Error
 			if err != nil {
@@ -69,8 +71,10 @@ func ImportRecord(dataFile string, records []*AccountRecord) error {
 				exist.Salt = record.Salt
 				exist.LoginPasswordEn = record.LoginPasswordEn
 				exist.ExtraMessage = record.ExtraMessage
+				exist.IsRemoved = record.IsRemoved
 				exist.CreateTime = record.CreateTime
 				exist.UpdateTime = record.UpdateTime
+				exist.RemoveTime = record.RemoveTime
 				err = db.Save(&exist).Error
 				if err != nil {
 					fmt.Println("import account", record.Name, "err: ", err)
@@ -90,6 +94,7 @@ func ImportRecord(dataFile string, records []*AccountRecord) error {
 	return nil
 }
 
+// QueryRecord 查询record，仅仅用于展示
 func QueryRecord(dataFile string, masterUserName, masterPassword string, recordNameKeyword string) ([]*DecodedRecord, error) {
 
 	db, err := initialDB(dataFile)
@@ -102,11 +107,13 @@ func QueryRecord(dataFile string, masterUserName, masterPassword string, recordN
 	if recordNameKeyword == "" {
 		err = db.
 			Where("user_name = ?", masterUserName).
+			Where("is_removed = ?", false).
 			Order("name").
 			Find(&datas).Error
 	} else {
 		err = db.
 			Where("user_name = ?", masterUserName).
+			Where("is_removed = ?", false).
 			Where("name like ?", "%"+recordNameKeyword+"%").
 			Order("name").
 			Find(&datas).Error
@@ -178,8 +185,10 @@ func ModifyRecord(dbFile, masterUserName, masterPassword string, newData *Decode
 			Salt:            base64.StdEncoding.EncodeToString(salt),
 			LoginPasswordEn: base64.StdEncoding.EncodeToString(encrypted),
 			ExtraMessage:    newData.ExtraMessage,
+			IsRemoved:       false,
 			CreateTime:      time.Now(),
 			UpdateTime:      time.Now(),
+			RemoveTime:      time.Time{},
 		}
 		return db.Save(&saveData).Error
 	}
@@ -198,7 +207,9 @@ func ModifyRecord(dbFile, masterUserName, masterPassword string, newData *Decode
 	oldData.LoginName = newData.LoginName
 	oldData.LoginPasswordEn = base64.StdEncoding.EncodeToString(encrypted)
 	oldData.ExtraMessage = newData.ExtraMessage
+	oldData.IsRemoved = false
 	oldData.UpdateTime = time.Now()
+	oldData.RemoveTime = time.Time{}
 	return db.Save(&oldData).Error
 }
 
@@ -214,6 +225,7 @@ func RemoveRecord(dbFile, masterUserName, recordName string) error {
 	err = db.
 		Where("user_name = ?", masterUserName).
 		Where("name=?", recordName).
+		Where("is_removed = ?", false).
 		First(&oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
@@ -221,5 +233,11 @@ func RemoveRecord(dbFile, masterUserName, recordName string) error {
 	if err == gorm.ErrRecordNotFound {
 		return nil
 	}
-	return db.Delete(oldData).Error
+
+	//return db.Delete(oldData).Error
+
+	oldData.IsRemoved = true
+	oldData.UpdateTime = time.Now()
+	oldData.RemoveTime = time.Now()
+	return db.Save(&oldData).Error
 }

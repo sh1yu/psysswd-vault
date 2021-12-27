@@ -7,6 +7,7 @@ import (
 	"github.com/sh1yu/psysswd-vault/persist"
 	"github.com/spf13/cobra"
 	"io/ioutil"
+	"strconv"
 	"time"
 )
 
@@ -47,9 +48,10 @@ func runExport(dataFile, targetType, objName, username string) error {
 	case "text":
 		var buf bytes.Buffer
 		for _, data := range datas {
-			line := fmt.Sprintf("%s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s\n",
+			line := fmt.Sprintf("%s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s \x1f %s\n",
 				data.UserName, data.Name, data.Description, data.LoginName, data.Salt, data.LoginPasswordEn, data.ExtraMessage,
-				data.CreateTime.Format(time.RFC3339), data.UpdateTime.Format(time.RFC3339))
+				data.CreateTime.Format(time.RFC3339), data.UpdateTime.Format(time.RFC3339),
+				strconv.FormatBool(data.IsRemoved), data.RemoveTime.Format(time.RFC3339))
 			buf.WriteString(line)
 		}
 

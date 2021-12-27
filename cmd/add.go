@@ -42,7 +42,7 @@ func runAdd(dataFile, username, password string, isGenerate bool, args []string)
 
 	var passwd string
 	if isGenerate {
-		newPasswd, err := util.GenPass("base3", 16)
+		newPasswd, err := util.GenPass("base2", 16)
 		if err != nil {
 			return err
 		}

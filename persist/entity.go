@@ -33,8 +33,10 @@ type AccountRecord struct {
 	Salt            string    `gorm:"size:255;not null;"`
 	LoginPasswordEn string    `gorm:"size:255;index"`
 	ExtraMessage    string    `gorm:"size:255;index"`
+	IsRemoved       bool      `gorm:"index"`
 	CreateTime      time.Time `gorm:"type:datetime"`
 	UpdateTime      time.Time `gorm:"type:datetime"`
+	RemoveTime      time.Time `gorm:"type:datetime"`
 }
 
 func (AccountRecord) TableName() string {

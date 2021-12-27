@@ -26,5 +26,7 @@ func initialDB(dbFile string) (*gorm.DB, error) {
 		}
 	}
 
+	db.AutoMigrate(&AccountRecord{})
+
 	return db, nil
 }

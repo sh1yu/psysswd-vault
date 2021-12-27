@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -59,12 +60,19 @@ func runImport(dataFile, targetType, objName, username string) error {
 				return r == 0x1f
 			})
 
-			if len(token) != 9 {
+			if len(token) < 9 {
 				continue
 			}
 
 			createTime, _ := time.Parse(time.RFC3339, strings.TrimSpace(token[7]))
 			updateTime, _ := time.Parse(time.RFC3339, strings.TrimSpace(token[8]))
+
+			isRemoved := false
+			removeTime := time.Time{}
+			if len(token) == 11 {
+				isRemoved, _ = strconv.ParseBool(strings.TrimSpace(token[9]))
+				removeTime, _ = time.Parse(time.RFC3339, strings.TrimSpace(token[10]))
+			}
 			accountRecord := persist.AccountRecord{
 				UserName:        strings.TrimSpace(token[0]),
 				Name:            strings.TrimSpace(token[1]),
@@ -73,8 +81,10 @@ func runImport(dataFile, targetType, objName, username string) error {
 				Salt:            strings.TrimSpace(token[4]),
 				LoginPasswordEn: strings.TrimSpace(token[5]),
 				ExtraMessage:    strings.TrimSpace(token[6]),
+				IsRemoved:       isRemoved,
 				CreateTime:      createTime,
 				UpdateTime:      updateTime,
+				RemoveTime:      removeTime,
 			}
 			records = append(records, &accountRecord)
 		}
