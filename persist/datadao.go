@@ -4,11 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"time"
+
 	"github.com/jinzhu/gorm"
 	"github.com/sh1yu/psysswd-vault/internal/constant"
 	"github.com/sh1yu/psysswd-vault/internal/util"
 	"golang.org/x/crypto/pbkdf2"
-	"time"
 )
 
 func DumpRecord(dataFile string, masterUserName string) ([]*AccountRecord, error) {
@@ -107,13 +108,13 @@ func QueryRecord(dataFile string, masterUserName, masterPassword string, recordN
 	if recordNameKeyword == "" {
 		err = db.
 			Where("user_name = ?", masterUserName).
-			Where("is_removed = ?", false).
+			Where("is_removed is null or is_removed = false").
 			Order("name").
 			Find(&datas).Error
 	} else {
 		err = db.
 			Where("user_name = ?", masterUserName).
-			Where("is_removed = ?", false).
+			Where("is_removed is null or is_removed = false").
 			Where("name like ?", "%"+recordNameKeyword+"%").
 			Order("name").
 			Find(&datas).Error
@@ -225,7 +226,7 @@ func RemoveRecord(dbFile, masterUserName, recordName string) error {
 	err = db.
 		Where("user_name = ?", masterUserName).
 		Where("name=?", recordName).
-		Where("is_removed = ?", false).
+		Where("is_removed is null or is_removed = false").
 		First(&oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
